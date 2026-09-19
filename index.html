@@ -500,16 +500,30 @@ var IDENT = {
     'var on=b.classList.contains("on") || (b.closest(".mwrap")||{classList:{contains:function(){return false}}}).classList.contains("on");' +
     'if(!on) b.click();' +
     'return true; })()'; },
-  // 3-1팀 퇴근보고: 로그인 계정을 같은 이름의 멘토와 연결
-  report: function(nm){ return '(function(){ var nm=' + nm + ';' +
+  // 3-1팀 퇴근보고: 로그인 계정을 같은 이름의 멘토와 연결.
+  // 인트라넷 관리자면 그 화면의 '팀장' 권한까지 줘서 팀 전체 데이터를 보게 한다.
+  report: function(nm, admin){ return '(function(){ var nm=' + nm + ', admin=' + (admin ? 'true' : 'false') + ';' +
     'if(typeof S==="undefined"||!S.mentors||typeof Cloud==="undefined") return false;' +
     'if(!Cloud.on||!Cloud.user) return false;' +
-    'var em=(Cloud.user.email||"").toLowerCase();' +
-    'if(S.accounts && S.accounts[em]) return true;' +
-    'if(S.mentors.indexOf(nm)<0) return false;' +
-    'S.accounts[em]=nm; S.me=nm;' +
+    'var em=(Cloud.user.email||"").toLowerCase(); if(!em) return false;' +
+    'if(!Array.isArray(S.leaders)) S.leaders=[];' +
+    'if(!S.accounts) S.accounts={};' +
+    'var ch=false;' +
+    'if(admin){' +
+      'if(S.mentors.indexOf(nm)<0){ S.mentors.push(nm); ch=true; }' +
+      'if(S.accounts[em]!==nm){ S.accounts[em]=nm; ch=true; }' +
+      'if(S.leaders.indexOf(em)<0){ S.leaders.push(em); ch=true; }' +
+    '} else {' +
+      'if(!S.accounts[em]){' +
+        'if(S.mentors.indexOf(nm)<0) return false;' +
+        'S.accounts[em]=nm; ch=true;' +
+      '}' +
+    '}' +
+    'if(S.accounts[em]) S.me=S.accounts[em];' +
     'var ov=document.getElementById("linkOvl"); if(ov) ov.classList.remove("on");' +
-    'save(); syncMentorSelects(); applyPerms(); renderSet(); return true; })()'; },
+    'if(ch && typeof save==="function") save();' +
+    'syncMentorSelects(); applyPerms(); renderSet();' +
+    'return true; })()'; },
   // 견적서: 담당 멘토·상담자를 로그인한 사람으로
   quote: function(nm){ return '(function(){ if(typeof CURRENT_USER==="undefined"||!CURRENT_USER) return false;' +
     'if(!CURRENT_USER.displayName) CURRENT_USER.displayName=' + nm + ';' +
